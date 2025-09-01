@@ -2,8 +2,7 @@ pipeline {
     agent any
 
     environment {
-        AWS_REGION = "ap-south-1"   // Change as per your AWS region
-        AWS_CREDENTIALS = credentials('aws-cred') // Jenkins credentials ID
+        AWS_REGION = "ap-south-1"   // Change to your AWS region
     }
 
     stages {
@@ -15,21 +14,22 @@ pipeline {
 
         stage('Validate Packer Template') {
             steps {
-                sh """
-                    packer validate template.json
-                """
+                sh "packer validate template.json"
             }
         }
 
         stage('Build AMI') {
             steps {
-                sh """
-                    packer build \
-                        -var 'aws_region=${AWS_REGION}' \
-                        -var 'aws_access_key=${AWS_CREDENTIALS_USR}' \
-                        -var 'aws_secret_key=${AWS_CREDENTIALS_PSW}' \
-                        template.json
-                """
+                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding',
+                                  credentialsId: 'aws-cred']]) {
+                    sh """
+                        packer build \
+                          -var 'aws_region=${AWS_REGION}' \
+                          -var 'aws_access_key=${AWS_ACCESS_KEY_ID}' \
+                          -var 'aws_secret_key=${AWS_SECRET_ACCESS_KEY}' \
+                          template.json
+                    """
+                }
             }
         }
     }
